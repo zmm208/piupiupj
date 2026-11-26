@@ -1,0 +1,1 @@
+System.register(["./app-security-legacy-C3VUbJWv.js"],function(e,t){"use strict";var n,r;return{setters:[function(e){n=e.M,r=e._}],execute:function(){e("Device",n("Device",{web:function(){return r(function(){return t.import("./web-legacy-CBYN1YH5.js")},void 0).then(function(e){return new e.DeviceWeb})}}))}}});

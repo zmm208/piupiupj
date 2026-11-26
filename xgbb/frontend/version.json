@@ -1,0 +1,11 @@
+{
+  "version": "2.5",
+  "channel": "release",
+  "repo": "zmm208/piupiupj",
+  "update_api": "https://api.github.com/repos/zmm208/piupiupj/releases/latest",
+  "apk_hint": "piupiupj.apk",
+  "auto_check": true,
+  "check_delay_ms": 1800,
+  "notes_max_chars": 1200,
+  "_说明": "版本号只跟插件修改版走（每次发版改这里），与官方 APK 版本无关。"
+}

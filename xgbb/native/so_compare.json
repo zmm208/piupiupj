@@ -1,0 +1,26 @@
+[
+  {
+    "abi": "arm64-v8a",
+    "size": 5187544,
+    "sha256": "bc85746647ce4ea5f390eccd61e5236fbd11786a91802877b9fdbbb66a55192d",
+    "same_as_old": true
+  },
+  {
+    "abi": "armeabi-v7a",
+    "size": 3557424,
+    "sha256": "a3d6e16e4477961cffc563ad9e9b49aa9cf0f4def5f008a9b349c9afacec6170",
+    "same_as_old": true
+  },
+  {
+    "abi": "x86",
+    "size": 4923492,
+    "sha256": "efd77986abfa03cff177ea1d9801bd3080bd8bfc90a26ac1a977da169c5b89c8",
+    "same_as_old": true
+  },
+  {
+    "abi": "x86_64",
+    "size": 5746024,
+    "sha256": "482f62c4d77e136d7cb7eb30d74a5c4cbadc3577d10ced1f13f3e745e1be7e7a",
+    "same_as_old": true
+  }
+]

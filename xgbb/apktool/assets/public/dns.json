@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "comment": "PiuPiu Guard 内置 DNS 列表（DoH JSON 接口）。可自行增删，App 启动/联网前会全部测速并只保留最快的一条。",
+  "probe_host": "www.piupiuchan.top",
+  "timeout_ms": 1600,
+  "cache_minutes": 10,
+  "servers": [
+    { "id": "ali",     "name": "阿里 AliDNS",   "url": "https://dns.alidns.com/resolve" },
+    { "id": "dnspod",  "name": "腾讯 DNSPod",   "url": "https://doh.pub/dns-query" },
+    { "id": "cf",      "name": "Cloudflare",    "url": "https://cloudflare-dns.com/dns-query" },
+    { "id": "google",  "name": "Google",        "url": "https://dns.google/resolve" },
+    { "id": "adg",     "name": "AdGuard",       "url": "https://dns.adguard-dns.com/resolve" },
+    { "id": "quad9",   "name": "Quad9",         "url": "https://dns.quad9.net:5053/dns-query" },
+    { "id": "360",     "name": "360 安全 DNS",  "url": "https://doh.360.cn/resolve" }
+  ]
+}
