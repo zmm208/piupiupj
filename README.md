@@ -158,34 +158,7 @@ contentKey = RSA-OAEP-SHA1_decrypt(wrapped_key)   // 必须 32 字节
 
 ---
 
-## 三、目录结构
-
-```
-.
-├─ PiuPiu酱.apk                  分析样本（2.8.1）
-├─ xgbb/                        ★ 主工作区（2.8.1 基座 + 改造）
-│  ├─ raw/                      7-Zip 全量解包（618 条目）
-│  ├─ apktool/                  apktool 工程（7677 个 smali，重打包基座）
-│  ├─ jadx/                     JADX 反编译（3664 个 java）
-│  ├─ native/                   libsqlcipher.so 哈希比对
-│  ├─ frontend_plain/           前端纯代码副本（79 文件 / 11 MB）
-│  ├─ frontend/                 注入层源文件（piupiu-guard.js / dns.json / version.json / donate.jpg）
-│  ├─ guard/
-│  │  ├─ java/                  GuardApp / GuardBridge / GuardVault / GuardNative
-│  │  └─ jni/                   crypto.h（SHA-256 / HMAC / ChaCha20）+ guard.c + CMakeLists
-│  ├─ tools/                    build.py / SignApk.java / VerifyApk.java / align_apk.py
-│  ├─ toolchain/                NDK r27c / android.jar(36) / apksig / r8
-│  ├─ build/                    构建中间件（含 manifest 干净副本、签名密钥）
-│  ├─ dist/app.apk              ★ 产物
-│  └─ report/                   逆向报告与更新记录
-├─ ywj/                         2.8.1 逆向副本（原始分析过程留档）
-├─ aipj/                        破甲词与重试策略的来源实现（api.py）
-└─ git/                         本说明所在目录
-```
-
----
-
-## 四、复现
+## 三、复现
 
 ```bash
 # 1) 静态解包
@@ -206,7 +179,7 @@ python tools/build.py                # 出 dist/app.apk（含签名与验证）
 
 ---
 
-## 五、验证记录（改造包）
+## 四、验证记录（改造包）
 
 | 项 | 结果 |
 |---|---|
