@@ -1,0 +1,1 @@
+System.register(["./ResourceMarketComments.vue_vue_type_script_setup_true_lang-legacy-ChYLcV4C.js","./app-security-legacy-C3VUbJWv.js","./mountApp-legacy-BTV05Ank.js","../e/index-legacy-Jt39Y2FK.js","./trash-2-legacy-CJz_wvFt.js"],function(e,t){"use strict";return{setters:[function(t){t._,e("default",t._)},null,null,null,null],execute:function(){}}});

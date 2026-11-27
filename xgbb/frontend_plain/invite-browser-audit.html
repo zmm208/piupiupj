@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invite Browser Audit</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fb;
+      --panel: #ffffff;
+      --text: #162033;
+      --muted: #677287;
+      --border: #d8dfeb;
+      --accent: #1769ff;
+      --accent-weak: #eaf1ff;
+      --pass: #127a43;
+      --fail: #b42318;
+      --skip: #8b5e00;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(180deg, #eef3ff 0%, var(--bg) 30%, #f8fafc 100%);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: 0 12px 32px rgba(20, 30, 55, 0.08);
+      padding: 20px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      margin-top: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--muted);
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      font-size: 14px;
+      color: var(--text);
+      background: #fff;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+    }
+
+    button.secondary {
+      background: var(--accent-weak);
+      color: var(--accent);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .meta {
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .results {
+      margin-top: 18px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .result {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      background: #fbfcff;
+    }
+
+    .result.pass { border-color: rgba(18, 122, 67, 0.25); background: rgba(18, 122, 67, 0.06); }
+    .result.fail { border-color: rgba(180, 35, 24, 0.25); background: rgba(180, 35, 24, 0.05); }
+    .result.skip { border-color: rgba(139, 94, 0, 0.25); background: rgba(139, 94, 0, 0.06); }
+
+    .result strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 15px;
+    }
+
+    pre {
+      margin: 18px 0 0;
+      padding: 16px;
+      border-radius: 14px;
+      background: #0f172a;
+      color: #dbe7ff;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 180px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <h1>Invite Browser Audit</h1>
+      <p>在浏览器环境下验证 `device_auth.php` 和 `device-invite.php` 的邀请安全链路，避免 Node 请求被 Cloudflare 特判。</p>
+
+      <div class="grid">
+        <div>
+          <label for="baseUrl">Base URL</label>
+          <input id="baseUrl" value="https://www.piupiuchan.top" />
+        </div>
+        <div>
+          <label for="cardKey">Card Key</label>
+          <input id="cardKey" placeholder="输入真实专属卡密" />
+        </div>
+        <div>
+          <label for="deviceId">Device ID</label>
+          <input id="deviceId" />
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="runBasic">运行基础审计</button>
+        <button id="runRateLimit" class="secondary">运行限流探测</button>
+      </div>
+
+      <div class="meta" id="meta"></div>
+      <div class="results" id="results"></div>
+      <pre id="log"></pre>
+    </div>
+  </div>
+
+  <script>
+    const baseUrlInput = document.getElementById('baseUrl')
+    const cardKeyInput = document.getElementById('cardKey')
+    const deviceIdInput = document.getElementById('deviceId')
+    const runBasicButton = document.getElementById('runBasic')
+    const runRateLimitButton = document.getElementById('runRateLimit')
+    const resultsEl = document.getElementById('results')
+    const logEl = document.getElementById('log')
+    const metaEl = document.getElementById('meta')
+
+    deviceIdInput.value = `browser-audit-${Date.now()}`
+
+    function log(message) {
+      logEl.textContent += `${message}\n`
+      logEl.scrollTop = logEl.scrollHeight
+    }
+
+    function setBusy(busy) {
+      runBasicButton.disabled = busy
+      runRateLimitButton.disabled = busy
+    }
+
+    function clearUi() {
+      resultsEl.innerHTML = ''
+      logEl.textContent = ''
+      metaEl.textContent = ''
+    }
+
+    function addResult(status, title, detail) {
+      const item = document.createElement('div')
+      item.className = `result ${status}`
+      item.innerHTML = `<strong>${title}</strong><span>${detail}</span>`
+      resultsEl.appendChild(item)
+    }
+
+    function readSessionPayload(data) {
+      if (!data || typeof data !== 'object') return null
+      const token = String(data.invite_session_token || '').trim()
+      const expiresAt = String(data.invite_session_expires_at || '').trim()
+      if (!token || !expiresAt) return null
+      return { token, expiresAt }
+    }
+
+    async function readJson(response) {
+      const text = await response.text()
+      try {
+        return JSON.parse(text)
+      } catch {
+        return {
+          status: 'error',
+          code: 'invalid_json',
+          message: text.slice(0, 200),
+          data: null
+        }
+      }
+    }
+
+    function buildUrls() {
+      const baseUrl = baseUrlInput.value.trim().replace(/\/+$/, '')
+      return {
+        authUrl: `${baseUrl}/device_auth.php`,
+        inviteUrl: `${baseUrl}/device-invite.php`
+      }
+    }
+
+    async function checkDeviceBinding(cardKey, deviceId) {
+      const { authUrl } = buildUrls()
+      const params = new URLSearchParams({
+        action: 'check',
+        card_key: cardKey,
+        device_id: deviceId
+      })
+      const response = await fetch(`${authUrl}?${params.toString()}`)
+      return {
+        httpStatus: response.status,
+        json: await readJson(response)
+      }
+    }
+
+    async function bootstrapSync(deviceId) {
+      const { inviteUrl } = buildUrls()
+      const response = await fetch(inviteUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'sync',
+          device_id: deviceId
+        })
+      })
+
+      return {
+        httpStatus: response.status,
+        json: await readJson(response)
+      }
+    }
+
+    async function authedSync(token, nonce = crypto.randomUUID().replace(/-/g, '')) {
+      const { inviteUrl } = buildUrls()
+      const response = await fetch(inviteUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'X-Invite-Timestamp': String(Math.floor(Date.now() / 1000)),
+          'X-Invite-Nonce': nonce
+        },
+        body: JSON.stringify({
+          action: 'sync'
+        })
+      })
+
+      return {
+        httpStatus: response.status,
+        json: await readJson(response),
+        nonce
+      }
+    }
+
+    async function invalidTokenSync() {
+      return authedSync('invalid.audit.token')
+    }
+
+    async function replaySync(token) {
+      const nonce = crypto.randomUUID().replace(/-/g, '')
+      const first = await authedSync(token, nonce)
+      const second = await authedSync(token, nonce)
+      return { first, second }
+    }
+
+    async function runAudit(runRateLimitProbe) {
+      clearUi()
+
+      const cardKey = cardKeyInput.value.trim()
+      const deviceId = deviceIdInput.value.trim()
+      if (!cardKey) {
+        addResult('fail', '缺少卡密', '请先输入真实专属卡密。')
+        return
+      }
+
+      setBusy(true)
+      metaEl.textContent = `Base URL: ${baseUrlInput.value.trim()} | Device ID: ${deviceId}`
+      log(`Base URL: ${baseUrlInput.value.trim()}`)
+      log(`Device ID: ${deviceId}`)
+
+      try {
+        const auth = await checkDeviceBinding(cardKey, deviceId)
+        const authSession = readSessionPayload(auth.json?.data)
+        addResult(
+          auth.httpStatus === 200 && auth.json?.status === 'success' && !!authSession ? 'pass' : 'fail',
+          'device_auth check returns session token',
+          `http=${auth.httpStatus} code=${auth.json?.code || 'unknown'}`
+        )
+        log(`[device_auth] ${JSON.stringify(auth.json)}`)
+
+        const bootstrap = await bootstrapSync(deviceId)
+        const bootstrapSession = readSessionPayload(bootstrap.json?.data)
+        addResult(
+          bootstrap.httpStatus === 200 && bootstrap.json?.status === 'success' && !!bootstrapSession ? 'pass' : 'fail',
+          'anonymous invite sync returns session token',
+          `http=${bootstrap.httpStatus} code=${bootstrap.json?.code || 'unknown'}`
+        )
+        log(`[bootstrap_sync] ${JSON.stringify(bootstrap.json)}`)
+
+        const session = bootstrapSession || authSession
+        if (!session) {
+          addResult('fail', 'follow-up checks aborted', '没有拿到 invite_session_token，后续检查已跳过。')
+          return
+        }
+
+        const authed = await authedSync(session.token)
+        addResult(
+          authed.httpStatus === 200 && authed.json?.status === 'success' ? 'pass' : 'fail',
+          'authenticated invite sync succeeds',
+          `http=${authed.httpStatus} code=${authed.json?.code || 'unknown'}`
+        )
+        log(`[authed_sync] ${JSON.stringify(authed.json)}`)
+
+        const invalid = await invalidTokenSync()
+        addResult(
+          invalid.httpStatus === 401 && invalid.json?.code === 'invite_session_invalid' ? 'pass' : 'fail',
+          'invalid token is rejected',
+          `http=${invalid.httpStatus} code=${invalid.json?.code || 'unknown'}`
+        )
+        log(`[invalid_token] ${JSON.stringify(invalid.json)}`)
+
+        const replay = await replaySync(session.token)
+        addResult(
+          replay.first.httpStatus === 200
+            && replay.first.json?.status === 'success'
+            && replay.second.httpStatus === 401
+            && replay.second.json?.code === 'invite_request_replayed'
+            ? 'pass'
+            : 'fail',
+          'nonce replay is rejected',
+          `first=${replay.first.httpStatus}/${replay.first.json?.code || 'unknown'} second=${replay.second.httpStatus}/${replay.second.json?.code || 'unknown'}`
+        )
+        log(`[replay_first] ${JSON.stringify(replay.first.json)}`)
+        log(`[replay_second] ${JSON.stringify(replay.second.json)}`)
+
+        if (runRateLimitProbe) {
+          const attempts = []
+          for (let i = 0; i < 7; i += 1) {
+            const result = await bootstrapSync(deviceId)
+            attempts.push(`${result.httpStatus}/${result.json?.code || 'unknown'}`)
+          }
+          const hitRateLimit = attempts.some((entry) => entry.includes('429/') || entry.endsWith('/sync_rate_limited'))
+          addResult(
+            hitRateLimit ? 'pass' : 'fail',
+            'rate limit eventually triggers',
+            attempts.join(', ')
+          )
+          log(`[rate_limit_probe] ${attempts.join(', ')}`)
+        } else {
+          addResult('skip', 'rate limit probe skipped', '点击“运行限流探测”再测。')
+        }
+      } catch (error) {
+        addResult('fail', 'unexpected error', String(error))
+        log(String(error?.stack || error))
+      } finally {
+        setBusy(false)
+      }
+    }
+
+    runBasicButton.addEventListener('click', () => runAudit(false))
+    runRateLimitButton.addEventListener('click', () => runAudit(true))
+  </script>
+</body>
+</html>
