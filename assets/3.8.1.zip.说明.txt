@@ -1,0 +1,9 @@
+3.8.1.zip 原始素材包（134 MB），超过 GitHub 单文件 100 MB 限制，这里按 90 MB 切片存放。
+
+合并还原：
+  Linux/macOS:  cat 3.8.1.zip.part* > 3.8.1.zip
+  Windows CMD:  copy /b 3.8.1.zip.part00+3.8.1.zip.part01 3.8.1.zip
+  或 7-Zip 直接对 part00 解压
+
+校验（SHA256）：
+  53e22ed3588c40f153a6f710566c508494f45709a14b515f9d47d2d7e4b8c88f  3.8.1.zip

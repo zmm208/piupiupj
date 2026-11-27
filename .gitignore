@@ -6,4 +6,4 @@ xgbb/native/
 # 签名私钥
 xgbb/build/ks/
 # 134 MB 素材包，超过 GitHub 单文件 100 MB 限制（放 Releases）
-3.8.1.zip
+# 3.8.1.zip 原包（134MB）不入库，已切片到 assets/
